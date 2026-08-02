@@ -1,0 +1,65 @@
+# =========================
+# Java & Maven
+# =========================
+# Compiled class files
+*.class
+
+# Log files
+*.log
+
+# Compiled archives
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Maven build directory
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# =========================
+# VS Code
+# =========================
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+.history/
+
+# =========================
+# Web Technologies (HTML/CSS/JS)
+# =========================
+# Ignore node_modules if you ever use npm/yarn for your frontend
+node_modules/
+dist/
+build/
+.npm/
+
+# =========================
+# Environment Variables / Secrets
+# =========================
+.env
+*.env
+.env.local
+.env.*.local
+
+# =========================
+# Operating System Files
+# =========================
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/

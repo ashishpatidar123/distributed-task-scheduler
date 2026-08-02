@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Scheduler Dashboard</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header>
+        <h1>Distributed Task Scheduler</h1>
+        <div class="header-right">
+            <span id="lastUpdate" style="font-size:11px;color:var(--muted)"></span>
+            <span class="status-dot disconnected" id="statusDot"></span>
+            <span id="statusText" style="font-size:13px;color:var(--muted)">Connecting...</span>
+        </div>
+    </header>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Task Detail Modal -->
+    <div class="modal-overlay" id="taskModal" onclick="if(event.target===this)closeModal()">
+        <div class="modal">
+            <div class="modal-header">
+                <span>Task Details</span>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- Workflow Detail Centered Modal -->
+    <div class="wf-modal-overlay" id="wfDetailPanel" onclick="if(event.target===this)closeWorkflowDetail()">
+        <div class="wf-modal">
+            <div class="wf-modal-header">
+                <span id="wfDetailTitle">Workflow</span>
+                <button class="modal-close" onclick="closeWorkflowDetail()">&times;</button>
+            </div>
+            <div class="wf-modal-body" id="wfDetailBody"></div>
+        </div>
+    </div>
+
+    <!-- Panel Modals (Status Distribution, Hash Ring, Failure Rate) -->
+    <div class="panel-modal-overlay" id="statusModal" onclick="if(event.target===this)closePanelModal('statusModal')">
+        <div class="panel-modal">
+            <div class="panel-modal-header"><span>Status Distribution</span><button class="modal-close" onclick="closePanelModal('statusModal')">&times;</button></div>
+            <div class="panel-modal-body"><div class="chart-container"><canvas id="statusChart" width="250" height="250"></canvas></div></div>
+        </div>
+    </div>
+    
+    <div class="panel-modal-overlay" id="hrModal" onclick="if(event.target===this)closePanelModal('hrModal')">
+        <div class="panel-modal">
+            <div class="panel-modal-header"><span>Hash Ring Distribution</span><button class="modal-close" onclick="closePanelModal('hrModal')">&times;</button></div>
+            <div class="panel-modal-body"><div class="hr-info" id="hrInfo"><div class="empty-state">Loading...</div></div></div>
+        </div>
+    </div>
+    <div class="panel-modal-overlay" id="frModal" onclick="if(event.target===this)closePanelModal('frModal')">
+        <div class="panel-modal">
+            <div class="panel-modal-header"><span>Failure Rate Simulator</span><button class="modal-close" onclick="closePanelModal('frModal')">&times;</button></div>
+            <div class="panel-modal-body"><div class="fr-panel" id="frPanel"><div class="empty-state">Loading...</div></div></div>
+        </div>
+    </div>
+    <div class="panel-modal-overlay" id="dlqModal" onclick="if(event.target===this)closePanelModal('dlqModal')">
+        <div class="panel-modal" style="max-width: 700px;">
+            <div class="panel-modal-header"><span>Dead Letter Queue</span><button class="modal-close" onclick="closePanelModal('dlqModal')">&times;</button></div>
+            <div class = "panel-modal-body">
+                <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center;flex-wrap: wrap;">
+                    <input type="text" id="dlqSearch" placeholder="Search by name or ID.." oninput="renderDlqEntries()" style="flex:1; min-width: 180px; padding: 5px 8px; font-size: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color:var(--text)">
+                    <label style="font-size: 11px; display: flex; align-items: center; gap: 4px; cursor: pointer; color:var(--muted);  white-space: nowrap;"><input type="checkbox" id="dlqHideReplayed" onchange="renderDlqEntries()"> Hide Replayed</label>
+
+                </div>
+                <div id="dlqList"><div class="empty-state">Loading...</div></div>
+                <div id="dlqPagination" style="margin-top: 10px;"></div>
+
+            </div>
+        </div>
+    </div>
+    <div class="panel-modal-overlay" id="rlModal" onclick="if(event.target===this)closePanelModal('rlModal')">
+        <div class="panel-modal" style="max-width:500px">
+            <div class="panel-modal-header"><span>Rate Limiter</span><button class="modal-close" onclick="closePanelModal('rlModal')">&times;</button></div>
+            <div class="panel-modal-body"><div  id="rlPanel"><div class="empty-state">Loading...</div></div></div>
+        </div>
+    </div>
+
+    <!-- canvas context menu -->
+    <div class="canvas-ctx-menu" id="canvasCtxMenu"></div>
+
+    <!-- Confirm Dialog -->
+    <div class="confirm-overlay" id="confirmDialog">
+        <div class="confirm-box">
+            <p id="confirmMsg">Are you sure?</p>
+            <div class="confirm-actions">
+                <button class="btn btn-sm btn-danger" id="confirmYes">Yes, Cancel</button>
+                <button class="btn btn-sm btn-outline" onclick="closeConfirm()">No, Go Back</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        
+        <!-- toolbar buttons -->
+         <div class="toolbar-row">
+            <button class="toolbar-btn" onclick="openPanelModal('statusModal')">&#x1F4CA; Status Distribution</button>
+             <button class="toolbar-btn" onclick="openPanelModal('hrModal')">&#x1F517; Hash Ring</button>
+             <button class="toolbar-btn" onclick="openPanelModal('frModal')">&#x1F3A8; Failure Rate Simulator</button>
+             <button class="toolbar-btn" onclick="openDlqModal()">Dead Letter Queue</button>
+             <button class="toolbar-btn" onclick="openRlModal()">Rate Limiter</button>
+             <button class="toolbar-btn" onclick="toggleDataDrawer()">&#x1F4C2; Data Explorer</button>
+         </div>
+
+        <!-- Workflow Builder Canvas -->
+        <div class="panel wf-section" id="wfBuilderPanel">
+            <div class="panel-header">
+                <span>Workflow Builder</span>
+                <button class="panel-toggle" onclick="this.classList.toggle('collapsed');document.getElementById('wfBuilderContent').style.display=this.classList.contains('collapsed')?'none':'block'">&#x25BC;</button>
+            </div>
+            <div id="wfBuilderContent">
+                <div class="wf-toolbar">
+                    <input type="text" id="wfName" placeholder="Workflow name">
+                    <input type="text" id="wfDesc" placeholder="Description (optional)">
+                    <button class="btn btn-sm btn-success" onclick="submitWorkflow()">&#x25B6; Submit Workflow</button>
+                    <button class="btn btn-sm btn-danger" onclick="clearCanvas()">Clear</button>
+                </div>
+                <div class="wf-canvas-wrap">
+                    <div class="wf-canvas-inner" id="wfCanvas">
+                        <svg id="wfSvg" xmlns="http://www.w3/org/2000/svg"></svg>
+                        <div class="empty-state" id="canvasEmpty" style="padding-top:140px">Add tasks below, then drag from the blue do at the bottom of a task to connect</div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+
+
+        <div class="main-grid">
+            <!-- Left Column -->
+            <div>
+                <!-- Submit Task -->
+                <div class="panel" style="margin-bottom:24px">
+                    <div class="panel-header">
+                        <span>Submit New Task</span>
+                        <button class="panel-toggle" onclick="toggleForm(this)">▼</button>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Task Name</label>
+                            <input type="text" id="taskName" placeholder="e.g. create a task">
+                        </div>
+                        <div class="form-group">
+                            <label>Type</label>
+                            <select id="taskType">
+                                
+                                <option value="DATA_PROCESSING">Data Processing</option>
+                                <option value="MULTI_CSV_PROCESSING">Multi-CSV Processing</option>
+                                
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Priority</label>
+                            <select id="taskPriority">
+                                <option value="LOW">Low</option>
+                                <option value="MEDIUM" selected>Medium</option>
+                                <option value="HIGH">High</option>
+                                <option value="CRITICAL">Critical</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Max Retries</label>
+                            <input type="number" id="taskRetries" value="3" min="0" max="10">
+                        </div>
+                        <div class="form-group">
+                            <label>Timeout (sec)</label>
+                            <input type="number" id="taskTimeout" value="60" min="5" max="600" title="Task timeout in seconds">
+                        </div>
+                        <div class="form-group">
+                            <label>Idempotent Key</label>
+                            <input type="text" id="taskIdempotentKey" placeholder="Optional unique key for idempotent operations">
+                        </div>
+                        <div class="form-group full">
+                            <label>Payload <button class="btn-outline" onclick="openPayloadBuilder()" style="font-size:11px; padding:2px 8px; margin-left:8px">Builder</button></label>
+                            <textarea id="taskPayload" placeholder='Select a task type to see the payload format'></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-primary" onclick="submitTask()">Submit Task</button>
+                            <button class="btn btn-primary" onclick="addToCanvas()" style="background:var(--success)">Add to Canvas</button>
+                            
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task List -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <span>Tasks</span>
+                        <div style="display:flex;gap:6px">
+                            <button class="btn-outline" onclick="exportCsv()">↓ CSV</button>
+                            <button class="btn btn-sm btn-primary" onclick="refreshTasks()">Refresh</button>
+                        </div>
+                    </div>
+                    <div class="bulk-bar" id="bulkBar">
+                        <span><span class="count" id="bulkCount">0</span> selected</span>
+                        <button class="btn btn-sm btn-danger" onclick="bulkCancel()">Cancel Selected</button>
+                        <button class="btn-outline" onclick="clearSelection()">Deselect All</button>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="task-table">
+                            <thead>
+                                <tr>
+                                    <th class="cb"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this.checked)"></th>
+                                    <th class="sortable" onclick="sortBy('id')">ID<span class="sort-arrow" id="sort-id"></span></th>
+                                    <th class="sortable" onclick="sortBy('name')">Name<span class="sort-arrow" id="sort-name"></span></th>
+                                    <th class="sortable" onclick="sortBy('type')">Type<span class="sort-arrow" id="sort-type"></span></th>
+                                    <th class="sortable" onclick="sortBy('priority')">Priority<span class="sort-arrow" id="sort-priority"></span></th>
+                                    <th class="sortable" onclick="sortBy('status')">Status<span class="sort-arrow" id="sort-status"></span></th>
+                                    <th>Worker</th>
+                                    <th class="sortable" onclick="sortBy('executionTimeMs')">Time<span class="sort-arrow" id="sort-executionTimeMs"></span></th>
+                                    <th>Action</th>
+                                </tr>
+                                <tr class="filter-row">
+
+                                    <th></th>
+                                    <th><input type="text" id="filterId" placeholder="ID..." oninput="applyFilters()"></th>
+                                    <th><input type="text" id="filterName" placeholder="Name..." oninput="applyFilters()"></th>
+                                    <th><select id="filterType" onchange="applyFilters()">
+                                        <option value="">All Types</option>
+                                        
+                                        <option value="DATA_PROCESSING">Data Processing</option>
+                                        <option value="MULTI_CSV_PROCESSING">Multi-CSV Processing</option>
+                                        
+                                    </select></th>
+                                    <th><select id="filterPriority" onchange="applyFilters()">
+                                        <option value="">All Priorities</option>
+                                        <option value="CRITICAL">Critical</option>
+                                        <option value="HIGH">High</option>
+                                        <option value="MEDIUM">Medium</option>
+                                        <option value="LOW">Low</option>
+                                    </select></th>
+                                    <th><select id="filterStatus" onchange="applyFilters()">
+                                        <option value="">All Statuses</option>
+                                        <option value="PENDING">Pending</option>
+                                        <option value="QUEUED">Queued</option>
+                                        <option value="RUNNING">Running</option>
+                                        <option value="COMPLETED">Completed</option>
+                                        <option value="FAILED">Failed</option>
+                                        <option value="RETRYING">Retrying</option>
+                                        <option value="CANCELLED">Cancelled</option>
+                                    </select></th>
+                                    <th><input type="text" id="filterWorker" placeholder="Worker..." oninput="applyFilters()"></th>
+                                    <th></th>
+                                    <th><button class="clear-btn" onclick="clearFilters()">Clear</button></th>
+                                </tr>
+                            </thead>
+                            <tbody id="taskTableBody">
+                                <tr><td colspan="9" class="empty-state">No tasks yet. Submit one above.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="pagination"></div>
+                </div>
+            </div>
+
+            <div>
+                <!-- Workflow List -->
+                <div class="panel" style="margin-bottom:24px">
+                    <div class="panel-header">
+                        <span>Workflows</span>
+                        <div style="display:flex;gap:6px">
+                            <button class="btn btn-sm btn-primary" onclick="refreshWorkflows()">Refresh</button>
+                        </div>
+                        
+                    </div>
+                    <div class="wf-filter-row">
+                        <input type="text" id="wfFilterSearch" placeholder="Search name or Id..." oninput="applyWfFilters()">
+                        <select id="wfFilterStatus" onchange="applyWfFilters()">
+                            <option value="">All Status</option>
+                            <option value="PENDING">Pending</option>
+                            <option value="RUNNING">Running</option>
+                            <option value="COMPLETED">Completed</option>
+                            <option value="FAILED">Failed</option>
+                        </select>
+                        <button class="clear-btn" onclick="clearWfFilters()" style="padding:5px 10px; font-size:11px">Clear</button>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="wf-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Status</th>
+                                    <th>Progress</th>
+                                </tr>
+                            </thead>
+                            <tbody id="wfTableBody">
+                                <tr><td colspan="4" class="empty-state">No workflows yet. Build one on the canvas above.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="wfPagination"></div>
+                </div>
+                
+                <!-- Right Column: Workers -->
+                <div class="panel" style="margin-bottom:24px">
+                    <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center">
+                        <span>Workers</span>
+                        <div style="display:flex;gap:6px;align-items:center">
+                            <label style="font-size: 10px;display: flex;align-items: center;gap: 3px;cursor: pointer;color: var(--muted);"><input type="checkbox" id="hideOfflineToggle" onchange="refreshWorkers()">Hide Offline</label>
+                        </div>
+                    </div>
+                    <div class="worker-list" id="workerList">
+                        <div class="empty-state">Loading workers...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- JSON Payload Builder Modal -->
+    <div class="panel-modal-overlay" id="payloadBuilderModal">
+        <div class="panel-modal" style="max-width:620px">
+            <div class="panel-modal-header">
+                <span>&#x1F527; Payload Builder</span>
+                <button class="btn-outline" onclick="closePanelModal('payloadBuilderModal')">&times;</button>
+            </div>
+            <div class="panel-modal-body">
+                <div class="pb-type-label" id="pbTypeLabel">DATA_PROCESSING</div>
+                <div id="pbFields"></div>
+                <div class="pb-preview">
+                    <label style="font-size:12px;font-weight:600;margin-bottom:4px;display:block">Preview</label>
+                    <pre id="pbPreview" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;font-size:12px;overflow-x:auto;max-height:150px;color:var(--text);margin:0"></pre>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+                    <button class="btn btn-primary" onclick="applyPayloadBuilder()">Apply to Payload</button>
+                    <button class="btn-outline" onclick="closePanelModal('payloadBuilderModal')">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Data Explorer Bottom Drawer -->
+    <div class="data-drawer" id="dataDrawer">
+        <div class="data-drawer-handle" id="drawerHandle"></div>
+        <div class="data-drawer-header">
+            <span class="drawer-title">&#x1F4C2; Data Explorer</span>
+            <input type="text" class="drawer-search" id="drawerFileSearch" placeholder="Filter files..." oninput="filterDrawerFiles()">
+            <button class="drawer-close" onclick="toggleDataDrawer()" title="Close">&times;</button>
+        </div>
+        <div class="data-drawer-files" id="drawerFileList"></div>
+        <div class="data-drawer-body" id="drawerPreview">
+            <div class="drawer-empty">Click a file above to preview its contents</div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+    <script src="js/app.js"></script>
+        
+    
+
+    <!-- Stats -->
+        <div class="status-bar" id="statusBar">
+            <div class="sb-item"><div class="sb-value" id="statTotal">0</div><div class="label">Total</div></div>
+            <div class="sb-item"><div class="sb-value" style="color:var(--info)" id="statQueued">0</div><div class="sb-label">Queued</div></div>
+            <div class="sb-item"><div class="sb-value" style="color:var(--primary)" id="statRunning">0</div><div class="sb-label">Running</div></div>
+            <div class="sb-item"><div class="sb-value" style="color:var(--success)" id="statCompleted">0</div><div class="sb-label">Completed</div></div>
+            <div class="sb-item"><div class="sb-value" style="color:var(--danger)" id="statFailed">0</div><div class="sb-label">Failed</div></div>
+            <div class="sb-item"><div class="sb-value" style="color:var(--warning)" id="statRetrying">0</div><div class="sb-label">Retrying</div></div>
+            <div class="sb-item"><div class="sb-value" style="color:var(--purple)" id="statThroughput">0</div><div class="sb-label">Tasks/min</div></div>
+            <div class="sb-item"><div class="sb-value" style="color:#ef4444" id="statDlq">0</div><div class="sb-label">DLQ</div></div>
+            <div class="sb-item"><div class="sb-value" style="color:#f59e0b" id="statRateLimit">0</div><div class="sb-label">Rate Limited</div></div>
+            <div class="sb-item"><div class="sb-value" style="color:#06b6d4" id="statRecovered">0</div><div class="sb-label">Recovered</div></div>
+        </div>
+</body>
+</html>

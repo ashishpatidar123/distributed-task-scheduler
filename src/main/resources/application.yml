@@ -1,0 +1,87 @@
+spring:
+  application:
+    name: distributed-task-scheduler
+
+  datasource:
+    url: jdbc:h2:mem:taskdb;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: true
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  kafka:
+    # bootstrap-servers: host.docker.internal:9092
+    bootstrap-servers: localhost:9092
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: true
+
+    consumer:
+      group-id: task-scheduler-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.scheduler.dto,com.scheduler.model
+
+server:
+  port: 8080
+
+kafka:
+  topics:
+    task-submissions: task-submissions
+    task-events: task-events
+    task-dlq: task-dlq
+
+scheduler:
+  worker-count: 4
+  queue-capacity: 100
+  heartbeat-interval-ms: 5000
+  heartbeat-timeout-ms: 15000
+  max-retries: 3
+  base-retry-delay-ms: 1000
+  poll-interval-ms: 2000
+  hash-ring:
+    virtual-nodes: 150
+  circuit-breaker:
+    failure-threshold: 5
+    reset-timeout-ms: 30000
+    window-ms: 60000
+  failure-rates:
+    data-processing: 15
+    multi-csv-processing: 20
+  task-timeout-ms: 60000
+  stuck-check-interval-ms: 5000
+  rate-limit:
+    enabled: true
+    global-capacity: 10
+    global-refill-per-sec: 2
+    per-type-capacity: 5
+    per-type-refill-per-sec: 1
+  starvation-boost-interval-ms: 10000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus, metrics
+  endpoint:
+    prometheus:
+      enabled: true

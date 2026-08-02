@@ -1,0 +1,21 @@
+id,name,email,age,city,signup_date,plan
+1,Amit Shah,amit.shah@example.com,28,Mumbai,2023-01-10,Premium
+2,Nisha Patel,nisha.patel@example.com,31,Ahmedabad,2022-07-18,Basic
+3,Rohan Gupta,rohan.gupta@example.com,24,Delhi,2024-02-12,Free
+4,Sneha Verma,sneha.verma@example.com,29,Pune,2023-05-21,Premium
+5,Kunal Singh,kunal.singh@example.com,35,Bengaluru,2021-09-30,Enterprise
+6,Pallavi Rao,pallavi.rao@example.com,27,Hyderabad,2024-01-08,Basic
+7,Arpit Jain,arpit.jain@example.com,33,Jaipur,2022-11-14,Premium
+8,Megha Joshi,megha.joshi@example.com,26,Indore,2023-08-03,Free
+9,Varun Nair,varun.nair@example.com,38,Chennai,2021-03-17,Enterprise
+10,Ritika Kapoor,ritika.kapoor@example.com,30,Mumbai,2022-12-01,Premium
+11,Harsh Mehta,harsh.mehta@example.com,25,Surat,2024-04-15,Basic
+12,Anjali Desai,anjali.desai@example.com,32,Vadodara,2022-06-09,Premium
+13,Deepak Kumar,deepak.kumar@example.com,29,Lucknow,2023-03-28,Free
+14,Shreya Iyer,shreya.iyer@example.com,34,Kochi,2021-10-19,Enterprise
+15,Nitin Yadav,nitin.yadav@example.com,27,Bhopal,2024-02-25,Basic
+16,Komal Chawla,komal.chawla@example.com,31,Delhi,2023-07-11,Premium
+17,Ajay Mishra,ajay.mishra@example.com,36,Nagpur,2021-12-22,Enterprise
+18,Priti Sharma,priti.sharma@example.com,23,Pune,2024-05-05,Free
+19,Gaurav Saxena,gaurav.saxena@example.com,28,Noida,2023-09-13,Basic
+20,Tanya Arora,tanya.arora@example.com,30,Gurugram,2022-08-27,Premium

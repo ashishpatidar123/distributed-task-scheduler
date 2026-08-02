@@ -1,0 +1,21 @@
+id,name,department,salary,years_experience,joined_date,rating
+1,Aarav Sharma,Engineering,95000,8,2018-03-12,4.8
+2,Priya Patel,HR,65000,5,2021-01-15,4.4
+3,Rahul Verma,Finance,78000,6,2019-07-22,4.5
+4,Sneha Gupta,Engineering,102000,10,2016-11-05,4.9
+5,Vikram Singh,Sales,72000,4,2022-02-18,4.2
+6,Ananya Rao,Marketing,69000,3,2023-04-10,4.1
+7,Karan Mehta,Engineering,88000,7,2019-09-30,4.6
+8,Neha Joshi,Support,56000,2,2024-01-08,4.0
+9,Rohit Kumar,Finance,81000,9,2017-05-17,4.7
+10,Isha Shah,HR,62000,4,2021-08-12,4.3
+11,Aditya Nair,Engineering,97000,8,2018-12-03,4.8
+12,Pooja Desai,Marketing,71000,5,2020-06-25,4.4
+13,Manish Yadav,Sales,74000,6,2019-10-14,4.5
+14,Kavya Iyer,Engineering,105000,11,2015-03-09,4.9
+15,Arjun Malhotra,Support,58000,3,2023-07-19,4.1
+16,Meera Kapoor,Finance,85000,7,2018-08-28,4.6
+17,Siddharth Jain,Engineering,92000,6,2020-02-11,4.5
+18,Riya Chawla,HR,67000,5,2021-05-06,4.3
+19,Dev Mishra,Sales,76000,4,2022-09-21,4.2
+20,Tanvi Kulkarni,Marketing,73000,5,2020-11-16,4.4
