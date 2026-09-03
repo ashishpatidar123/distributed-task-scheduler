@@ -8,7 +8,13 @@ import java.util.UUID;
 //  also contains the details of the workflow of which the task is part of, if any
 
 @Entity
-@Table(name = "tasks")
+@Table(name = "tasks", indexes = {
+        @Index(name = "idx_task_status", columnList = "status"),
+        @Index(name = "idx_task_status_priority", columnList = "status, priority"),
+        @Index(name = "idx_task_workflow", columnList = "workflowId"),
+        @Index(name = "idx_task_created", columnList = "createdAt"),
+        @Index(name = "idx_task_idempotency", columnList = "idempotentKey", unique = true)
+})
 public class Task{
 
     @Id
@@ -21,7 +27,7 @@ public class Task{
     @Column(nullable = false)
     private TaskType type;
 
-    @Column(columnDefinition = "CLOB")
+    @Column(columnDefinition = "TEXT")
     private String payload;
 
     @Enumerated(EnumType.STRING)
@@ -42,10 +48,10 @@ public class Task{
 
     private String assignedWorker;
 
-    @Column(columnDefinition = "CLOB")
+    @Column(columnDefinition = "TEXT")
     private String errorMessage;
 
-    @Column(columnDefinition = "CLOB")
+    @Column(columnDefinition = "TEXT")
     private String result;
 
     private long executionTimeMs;

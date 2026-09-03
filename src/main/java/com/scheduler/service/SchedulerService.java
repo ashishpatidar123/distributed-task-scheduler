@@ -14,6 +14,7 @@ import jakarta.annotation.PreDestroy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -218,101 +219,112 @@ public class SchedulerService {
     }
 
     private void executeTask(WorkerInfo worker, String taskId) {
+
+        MDC.put("taskId", taskId);
+        log.info("{} picked up task {}", worker.getName(), taskId);
+        MDC.put("workerName", worker.getName());
         
-        Optional<Task> optTask = taskRepository.findById(taskId);
-        if (optTask.isEmpty()) {
-            log.warn("Task {} not found in DB, skipping", taskId);
-            return;
-        }
-
-        Task task = optTask.get();
-
-        // Skip if cancelled
-        if (task.getStatus() == TaskStatus.CANCELLED) {
-            log.info("Task {} was cancelled, skipping", taskId);
-            enqueuedTaskIds.remove(taskId);
-            return;
-        }
-
-        TaskStatus currentStatus = task.getStatus();
-        if(currentStatus == TaskStatus.RUNNING || currentStatus == TaskStatus.COMPLETED){
-            log.debug("Task {} already in state {}, skipping duplicate execution", task.getId(), currentStatus);
-            enqueuedTaskIds.remove(taskId);
-            return;
-        }
-
-        // Mark as RUNNING
-        worker.setStatus(WorkerStatus.BUSY);
-        worker.setCurrentTaskId(taskId);
-        task.setStatus(TaskStatus.RUNNING);
-        task.setStartedAt(LocalDateTime.now());
-        task.setAssignedWorker(worker.getName());
-        taskRepository.save(task);
-        kafkaProducerService.publishEvent(
-                TaskEvent.of(task.getId(), task.getName(), TaskStatus.RUNNING, worker.getName()));
-
-        log.info("{} executing task {} [{}] - '{}'",
-                worker.getName(), task.getId(), task.getType(), task.getName());
-
-        String hashKey = task.getType() + ":" + task.getId();
-        String assignedByRing = hashRing.getWorker(hashKey);
-        log.info("[HashRing] Task {} hashed to worker {} (actual: {})", task.getId(), assignedByRing, worker.getId());
-
-        // Get the handler for this task type
-        TaskHandler handler = handlers.get(task.getType());
-        if (handler == null) {
-            handleFailure(task, worker, "No handler registered for task type: " + task.getType());
-            return;
-        }
-
-
-
-        TaskAttempt attempt = TaskAttempt.start(task.getId(), task.getRetryCount() + 1, worker.getName());
-        // Execute the task
-        long startTime = System.currentTimeMillis();
-        try {
-            String result = handler.execute(task.getId(), task.getPayload());
-            long elapsed = System.currentTimeMillis() - startTime;
-
-            // SUCCESS
-            task.setStatus(TaskStatus.COMPLETED);
-            task.setCompletedAt(LocalDateTime.now());
-            task.setResult(result);
-            task.setExecutionTimeMs(elapsed);
-            taskCompletedCounter.increment();
-            taskExecutionTimer.record(elapsed, java.util.concurrent.TimeUnit.MILLISECONDS);
-            task.setErrorMessage(null);
-            taskRepository.save(task);
-
-            attempt.complete(result, elapsed);
-            taskAttemptRepository.save(attempt);
-            completionTimestamps.add(System.currentTimeMillis());
-
-            worker.incrementCompleted();
-            worker.setCurrentTaskId(null);
-            enqueuedTaskIds.remove(taskId);
-
-            triggerDependents(task.getId());
-
-            if(task.getWorkflowId() != null && workflowService != null){
-                workflowService.updateWorkflowStatus(task.getWorkflowId());
+        try{
+            Optional<Task> optTask = taskRepository.findById(taskId);
+            if (optTask.isEmpty()) {
+                log.warn("Task {} not found in DB, skipping", taskId);
+                return;
             }
 
-            log.info("Task {} COMPLETED by {} in {}ms", task.getId(), worker.getName(), elapsed);
-            TaskEvent completedEvent = TaskEvent.of(task.getId(), task.getName(), TaskStatus.COMPLETED, worker.getName());
-            completedEvent.setResult(result);
-            completedEvent.setExecutionTimeMs(elapsed);
-            kafkaProducerService.publishEvent(completedEvent);
+            Task task = optTask.get();
 
-        } catch (Exception e) {
-            long elapsed = System.currentTimeMillis() - startTime;
-            task.setExecutionTimeMs(elapsed);
+            // Skip if cancelled
+            if (task.getStatus() == TaskStatus.CANCELLED) {
+                log.info("Task {} was cancelled, skipping", taskId);
+                enqueuedTaskIds.remove(taskId);
+                return;
+            }
 
-            attempt.fail(e.getMessage(), elapsed);
-            taskAttemptRepository.save(attempt);
+            TaskStatus currentStatus = task.getStatus();
+            if(currentStatus == TaskStatus.RUNNING || currentStatus == TaskStatus.COMPLETED){
+                log.debug("Task {} already in state {}, skipping duplicate execution", task.getId(), currentStatus);
+                enqueuedTaskIds.remove(taskId);
+                return;
+            }
 
-            handleFailure(task, worker, e.getMessage());
+            // Mark as RUNNING
+            worker.setStatus(WorkerStatus.BUSY);
+            worker.setCurrentTaskId(taskId);
+            task.setStatus(TaskStatus.RUNNING);
+            task.setStartedAt(LocalDateTime.now());
+            task.setAssignedWorker(worker.getName());
+            taskRepository.save(task);
+            kafkaProducerService.publishEvent(
+                    TaskEvent.of(task.getId(), task.getName(), TaskStatus.RUNNING, worker.getName()));
+
+            log.info("{} executing task {} [{}] - '{}'",
+                    worker.getName(), task.getId(), task.getType(), task.getName());
+
+            String hashKey = task.getType() + ":" + task.getId();
+            String assignedByRing = hashRing.getWorker(hashKey);
+            log.info("[HashRing] Task {} hashed to worker {} (actual: {})", task.getId(), assignedByRing, worker.getId());
+
+            // Get the handler for this task type
+            TaskHandler handler = handlers.get(task.getType());
+            if (handler == null) {
+                handleFailure(task, worker, "No handler registered for task type: " + task.getType());
+                return;
+            }
+
+
+
+            TaskAttempt attempt = TaskAttempt.start(task.getId(), task.getRetryCount() + 1, worker.getName());
+            // Execute the task
+            long startTime = System.currentTimeMillis();
+            try {
+                String result = handler.execute(task.getId(), task.getPayload());
+                long elapsed = System.currentTimeMillis() - startTime;
+
+                // SUCCESS
+                task.setStatus(TaskStatus.COMPLETED);
+                task.setCompletedAt(LocalDateTime.now());
+                task.setResult(result);
+                task.setExecutionTimeMs(elapsed);
+                taskCompletedCounter.increment();
+                taskExecutionTimer.record(elapsed, java.util.concurrent.TimeUnit.MILLISECONDS);
+                task.setErrorMessage(null);
+                taskRepository.save(task);
+
+                attempt.complete(result, elapsed);
+                taskAttemptRepository.save(attempt);
+                completionTimestamps.add(System.currentTimeMillis());
+
+                worker.incrementCompleted();
+                worker.setCurrentTaskId(null);
+                enqueuedTaskIds.remove(taskId);
+
+                triggerDependents(task.getId());
+
+                if(task.getWorkflowId() != null && workflowService != null){
+                    workflowService.updateWorkflowStatus(task.getWorkflowId());
+                }
+
+                log.info("Task {} COMPLETED by {} in {}ms", task.getId(), worker.getName(), elapsed);
+                TaskEvent completedEvent = TaskEvent.of(task.getId(), task.getName(), TaskStatus.COMPLETED, worker.getName());
+                completedEvent.setResult(result);
+                completedEvent.setExecutionTimeMs(elapsed);
+                kafkaProducerService.publishEvent(completedEvent);
+
+            } catch (Exception e) {
+                long elapsed = System.currentTimeMillis() - startTime;
+                task.setExecutionTimeMs(elapsed);
+
+                attempt.fail(e.getMessage(), elapsed);
+                taskAttemptRepository.save(attempt);
+
+                handleFailure(task, worker, e.getMessage());
+            }
         }
+        finally{
+            MDC.remove("taskId");
+            MDC.remove("workerName");
+        }
+        
     }
 
     private void handleFailure(Task task, WorkerInfo worker, String errorMessage) {

@@ -22,7 +22,7 @@ public class Workflow{
     @Column(nullable = false)
     private String name;
 
-    @Column(columnDefinition = "CLOB")
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     @Enumerated(EnumType.STRING)

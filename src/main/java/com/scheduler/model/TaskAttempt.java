@@ -26,10 +26,10 @@ public class TaskAttempt {
     private LocalDateTime endedAt;
     private long durationMs;
 
-    @Column(columnDefinition="CLOB")
+    @Column(columnDefinition="TEXT")
     private String errorMessage;
 
-    @Column(columnDefinition = "CLOB")
+    @Column(columnDefinition = "TEXT")
     private String result;
 
     

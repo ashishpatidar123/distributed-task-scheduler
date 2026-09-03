@@ -31,13 +31,13 @@ public class DlqEntry {
     @Enumerated(EnumType.STRING)
     private TaskType taskType;
 
-    @Column(columnDefinition = "CLOB")
+    @Column(columnDefinition = "TEXT")
     private String payload;
 
     @Enumerated(EnumType.STRING)
     private TaskPriority priority;
 
-    @Column(columnDefinition = "CLOB")
+    @Column(columnDefinition = "TEXT")
     private String errorMessage;
 
     private int retryCount;

@@ -4,6 +4,9 @@ import com.scheduler.dto.*;
 import com.scheduler.model.*;
 import com.scheduler.repository.*;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -61,6 +64,7 @@ public class TaskService {
     }
 
     @Transactional(readOnly =  true)
+    @Cacheable(value = "tasks", key = "#id", unless = "#result == null")
     public Optional<Task> getTask(String id){
         return taskRepository.findById(id);
     }
@@ -82,6 +86,7 @@ public class TaskService {
         return taskRepository.save(task);
     }
 
+    @CacheEvict(value = "tasks", key = "#task.id")
     public Task updateTask(Task task){
         return taskRepository.save(task);
     }
