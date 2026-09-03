@@ -82,7 +82,7 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
   
   promtail:
-    image: prom/promtail:2.9.0
+    image: grafana/promtail:2.9.0
     container_name: promtail
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -130,8 +130,8 @@ services:
       - loki
   scheduler-app:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../
+      dockerfile: docker/Dockerfile
     container_name: scheduler-app
     ports:
       - "8080:8080"
@@ -140,12 +140,13 @@ services:
       SPRING_DATASOURCE_USERNAME: scheduler
       SPRING_DATASOURCE_PASSWORD: scheduler
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      REDIS_HOST: redis
     depends_on:
       postgres:
         condition: service_healthy
       kafka:
         condition: service_started
-    REDIS_HOST: redis
+    
 
 
 volumes:

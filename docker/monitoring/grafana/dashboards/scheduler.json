@@ -1,0 +1,230 @@
+{
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "Task Overview",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 15, "lineWidth": 2 }, "unit": "ops" } },
+      "gridPos": { "h": 8, "w": 14, "x": 0, "y": 1 },
+      "id": 1,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "title": "Task Rate (submitted / completed / failed)",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "rate(scheduler_tasks_submitted_total{application=\"distributed-task-scheduler\"}[5m])", "legendFormat": "submitted", "refId": "A" },
+        { "expr": "rate(scheduler_tasks_completed_total{application=\"distributed-task-scheduler\"}[5m])", "legendFormat": "completed", "refId": "B" },
+        { "expr": "rate(scheduler_tasks_failed_total{application=\"distributed-task-scheduler\"}[5m])", "legendFormat": "failed", "refId": "C" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 5 }, { "color": "red", "value": 15 }] }, "unit": "ops" } },
+      "gridPos": { "h": 4, "w": 5, "x": 14, "y": 1 },
+      "id": 2,
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Throughput / sec",
+      "type": "stat",
+      "targets": [
+        { "expr": "rate(scheduler_tasks_completed_total{application=\"distributed-task-scheduler\"}[1m])", "refId": "A" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 0.5 }, { "color": "red", "value": 1 }] }, "unit": "percentunit" } },
+      "gridPos": { "h": 4, "w": 5, "x": 19, "y": 1 },
+      "id": 3,
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Failure Rate",
+      "type": "stat",
+      "targets": [
+        { "expr": "rate(scheduler_tasks_failed_total{application=\"distributed-task-scheduler\"}[5m]) / (rate(scheduler_tasks_completed_total{application=\"distributed-task-scheduler\"}[5m]) + rate(scheduler_tasks_failed_total{application=\"distributed-task-scheduler\"}[5m]))", "refId": "A" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "gridPos": { "h": 4, "w": 10, "x": 14, "y": 5 },
+      "id": 4,
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Totals (Submitted / Completed / Failed)",
+      "type": "stat",
+      "targets": [
+        { "expr": "scheduler_tasks_submitted_total{application=\"distributed-task-scheduler\"}", "legendFormat": "submitted", "refId": "A" },
+        { "expr": "scheduler_tasks_completed_total{application=\"distributed-task-scheduler\"}", "legendFormat": "completed", "refId": "B" },
+        { "expr": "scheduler_tasks_failed_total{application=\"distributed-task-scheduler\"}", "legendFormat": "failed", "refId": "C" }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "id": 101,
+      "title": "Queue & Workers",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "max": 100, "min": 0, "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 50 }, { "color": "red", "value": 90 }] }, "unit": "short" } },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 10 },
+      "id": 5,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdMarkers": true },
+      "title": "Queue Size",
+      "type": "gauge",
+      "targets": [
+        { "expr": "scheduler_queue_size{application=\"distributed-task-scheduler\"}", "refId": "A" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 50, "lineWidth": 2, "stacking": { "mode": "normal" } }, "unit": "short" } },
+      "gridPos": { "h": 8, "w": 8, "x": 6, "y": 10 },
+      "id": 6,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "title": "Worker Status (Busy / Idle)",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "scheduler_workers_busy{application=\"distributed-task-scheduler\"}", "legendFormat": "busy", "refId": "A" },
+        { "expr": "scheduler_workers_idle{application=\"distributed-task-scheduler\"}", "legendFormat": "idle", "refId": "B" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 75 }, { "color": "red", "value": 95 }] }, "max": 100, "min": 0, "unit": "percent" } },
+      "gridPos": { "h": 8, "w": 5, "x": 14, "y": 10 },
+      "id": 7,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdMarkers": true },
+      "title": "Worker Utilization %",
+      "type": "gauge",
+      "targets": [
+        { "expr": "scheduler_workers_busy{application=\"distributed-task-scheduler\"} / scheduler_workers_total{application=\"distributed-task-scheduler\"} * 100", "refId": "A" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 30, "lineWidth": 2 }, "unit": "short" } },
+      "gridPos": { "h": 8, "w": 5, "x": 19, "y": 10 },
+      "id": 8,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "title": "Queue Over Time",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "scheduler_queue_size{application=\"distributed-task-scheduler\"}", "legendFormat": "used", "refId": "A" },
+        { "expr": "scheduler_queue_capacity{application=\"distributed-task-scheduler\"}", "legendFormat": "capacity", "refId": "B" }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
+      "id": 102,
+      "title": "Task Execution Latency",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 10, "lineWidth": 2 }, "unit": "s" } },
+      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 19 },
+      "id": 9,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "title": "Task Execution Time - P50 / P95 / P99",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "histogram_quantile(0.50, rate(scheduler_task_execution_time_seconds_bucket{application=\"distributed-task-scheduler\"}[5m]))", "legendFormat": "p50", "refId": "A" },
+        { "expr": "histogram_quantile(0.95, rate(scheduler_task_execution_time_seconds_bucket{application=\"distributed-task-scheduler\"}[5m]))", "legendFormat": "p95", "refId": "B" },
+        { "expr": "histogram_quantile(0.99, rate(scheduler_task_execution_time_seconds_bucket{application=\"distributed-task-scheduler\"}[5m]))", "legendFormat": "p99", "refId": "C" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "color": { "fixedColor": "semi-dark-blue", "mode": "fixed" }, "unit": "s" } },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 19 },
+      "id": 10,
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Avg Execution Time",
+      "type": "stat",
+      "targets": [
+        { "expr": "rate(scheduler_task_execution_time_seconds_sum{application=\"distributed-task-scheduler\"}[5m]) / rate(scheduler_task_execution_time_seconds_count{application=\"distributed-task-scheduler\"}[5m])", "refId": "A" }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 },
+      "id": 103,
+      "title": "JVM - Memory, GC & CPU",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 20, "lineWidth": 2 }, "unit": "bytes" } },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 28 },
+      "id": 11,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "title": "JVM Memory",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "jvm_memory_used_bytes{application=\"distributed-task-scheduler\", area=\"heap\"}", "legendFormat": "heap used", "refId": "A" },
+        { "expr": "jvm_memory_max_bytes{application=\"distributed-task-scheduler\", area=\"heap\"}", "legendFormat": "heap max", "refId": "B" },
+        { "expr": "jvm_memory_used_bytes{application=\"distributed-task-scheduler\", area=\"nonheap\"}", "legendFormat": "non-heap", "refId": "C" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 30, "drawStyle": "bars" }, "unit": "s" } },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 28 },
+      "id": 12,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "title": "GC Pause Duration",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "rate(jvm_gc_pause_seconds_sum{application=\"distributed-task-scheduler\"}[1m])", "legendFormat": "{{action}}", "refId": "A" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 15, "lineWidth": 2 }, "unit": "percentunit", "min": 0, "max": 1 } },
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 28 },
+      "id": 13,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "title": "CPU Usage",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "process_cpu_usage{application=\"distributed-task-scheduler\"}", "legendFormat": "process", "refId": "A" },
+        { "expr": "system_cpu_usage{application=\"distributed-task-scheduler\"}", "legendFormat": "system", "refId": "B" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 15, "lineWidth": 2 }, "unit": "short" } },
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 32 },
+      "id": 14,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "title": "JVM Threads",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "jvm_threads_live_threads{application=\"distributed-task-scheduler\"}", "legendFormat": "live", "refId": "A" },
+        { "expr": "jvm_threads_daemon_threads{application=\"distributed-task-scheduler\"}", "legendFormat": "daemon", "refId": "B" },
+        { "expr": "jvm_threads_peak_threads{application=\"distributed-task-scheduler\"}", "legendFormat": "peak", "refId": "C" }
+      ]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "tags": [
+    "task-scheduler",
+    "spring-boot",
+    "kafka"
+  ],
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "timezone": "browser",
+  "title": "Distributed Task Scheduler",
+  "uid": "task-scheduler-dashboard",
+  "version": 1
+}
